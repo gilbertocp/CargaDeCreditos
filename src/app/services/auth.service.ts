@@ -35,8 +35,8 @@ export class AuthService {
     return this.afAuth.createUserWithEmailAndPassword(email, password);
   }
 
-  logout(): Promise<void> {
-    return this.afAuth.signOut();
+  logout(): void {
+    this.afAuth.signOut();
   }
 
   getCurrentUser(): Observable<User> {

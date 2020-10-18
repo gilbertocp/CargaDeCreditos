@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, reduce } from 'rxjs/operators';
 import { Credito } from '../models/credito';
 
 @Injectable({
@@ -13,7 +13,7 @@ export class CreditosService {
   private creditos: Observable<Credito[]>;
   private creditosDoc: AngularFirestoreDocument;
 
-  constructor(private db: AngularFirestore) { 
+  constructor(private readonly db: AngularFirestore) { 
     this.creditosCollecion = this.db.collection('creditos');
     this.creditos = this.creditosCollecion.snapshotChanges().pipe(
       map(actions => {
@@ -39,7 +39,9 @@ export class CreditosService {
     this.creditosDoc.delete();
   }
 
-  creditoActual() {
-    
+  creditosUsuario(id: number): any {
+    return this.db.collection('creditos', ref => ref.where('idUsuario', '==', id))
+    .valueChanges({idField: 'docId'});
   }
+
 }

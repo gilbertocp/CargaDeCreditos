@@ -44,8 +44,6 @@ export class LoginPage implements OnInit {
   }
 
   async openPicker(numColumns = 1, numOptions = 5, columnOptions = this.usuarios) {
-    console.log('estoy aca');
-    
     const picker = await this.pickerCtlr.create({
       columns: this.getColumns(numColumns, numOptions, columnOptions),
       buttons: [

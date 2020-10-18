@@ -1,13 +1,10 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner/ngx';
 import { AlertController, Platform } from '@ionic/angular';
 import { CreditosService } from '../../services/creditos.service';
 import { AuthService } from '../../services/auth.service';
-import { Usuario } from '../../models/usuario';
-import { first, reduce } from 'rxjs/operators';
-import { getLocaleFirstDayOfWeek } from '@angular/common';
-import { computeStackId } from '@ionic/angular/directives/navigation/stack-utils';
 import { Router } from '@angular/router';
+import { Credito } from '../../models/credito';
 
 
 @Component({
@@ -21,6 +18,9 @@ export class HomePage {
   scanSubscription: any;
   creditoActual: number = 0;
   spinner: boolean = true;
+  idUsuarioActual: number;
+  creditosUsuario: Credito[];
+  perfilUsuarioActual: string;
   codigos = {
     'cien': '2786f4877b9091dcad7f35751bfcf5d5ea712b2f',
     'diez': '8c95def646b6127282ed50454b73240300dccabc',
@@ -31,7 +31,7 @@ export class HomePage {
     private qrScanner: QRScanner, 
     private alertCtlr: AlertController,
     private plt: Platform,
-    private creditosSvc: CreditosService,
+    public creditosSvc: CreditosService,
     private authSvc: AuthService,
     private router: Router
   ) { 
@@ -40,6 +40,33 @@ export class HomePage {
       this.scanSubscription.unsubscribe();
     });
 
+    const userS$ = this.authSvc.user$.subscribe(
+      user => {
+        this.idUsuarioActual = user.id;
+        this.perfilUsuarioActual = user.perfil;
+
+        this.creditosSvc.creditosUsuario(this.idUsuarioActual).subscribe(
+          crdArr => {
+            this.creditosUsuario = crdArr;
+
+            this.creditoActual = crdArr.reduce((acc, el) => {
+              acc += el.creditoCargado;
+              return acc;
+            },0);
+
+            this.spinner = false;
+          },
+          err => {
+            console.log(err);
+          },
+        );
+
+        userS$.unsubscribe();
+      },
+      err => {
+        console.log(err);
+      }
+    );
   }
 
   escanear() {
@@ -52,30 +79,25 @@ export class HomePage {
 
       if(status.authorized) {
         this.qrScanner.show();
-
         document.getElementsByTagName('body')[0].style.opacity = "0";
 
-        this.scanSubscription = this.qrScanner.scan().subscribe(contenido => {
-          document.getElementsByTagName('body')[0].style.opacity = "1";
-          console.log(contenido);
-          
-          if(contenido)
+        this.scanSubscription = this.qrScanner.scan().subscribe(
+          contenido => {
+            document.getElementsByTagName('body')[0].style.opacity = "1";
+            console.log(contenido);
             this.agregarCredito(contenido);          
-
-          this.scanSubscription.unsubscribe();
-        },
-        err => {
-          this.alerta('Error', JSON.stringify(err));
-        });
+            this.scanSubscription.unsubscribe();
+          },
+          err => {
+            this.alerta('Error', JSON.stringify(err));
+          }
+        );
       }
     });
   }
 
   agregarCredito(qrContenido) {
-    console.log('Entro al funcion');
-    
     let creditoCargado = 0;
-    let contadorCreditoCargado = 0;
     let creditoCargadoNombre = '';
 
     if(qrContenido === this.codigos['diez']) {
@@ -91,15 +113,40 @@ export class HomePage {
       creditoCargadoNombre = 'cien';
     }
 
+    const arr = this.creditosUsuario.filter(el => el.codigoQr === qrContenido);
+
+    if(this.perfilUsuarioActual === 'admin') {
+      if(arr.length < 2) {
+        this.creditosSvc.addCredito({
+          codigoQr: qrContenido,
+          creditoCargado,
+          idUsuario: this.idUsuarioActual
+        });
+      } else {
+        this.alerta('Excedio recarga', 'Usted ha excedido la cantidad de recargas');
+      }
+    } else {
+      if(arr.length < 1) {
+        this.creditosSvc.addCredito({
+          codigoQr: qrContenido,
+          creditoCargado,
+          idUsuario: this.idUsuarioActual
+        });
+      } else {
+        this.alerta('Excedio recarga', 'Usted ha excedido la cantidad de recargas');
+      }
+    }
+    
   }
 
-  logout() {
+  logout(): void {
     this.authSvc.logout();
     this.router.navigate(['/login']);
   }
 
   limpiarCredito() {
-
+    let auxArr = this.creditosUsuario.map(a => Object.assign({}, a));
+    auxArr.forEach(el => this.creditosSvc.deleteCredito(el));
   }
 
   private alerta(header?: string, msj?: string) {
