@@ -1,20 +1,28 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button (click)="logout()">
+        <ion-icon name="log-out-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
     <ion-title>
-      Blank
+      Carga De Créditos
     </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+  <ion-item>
+    <ion-label>Crédito Actual</ion-label>
+    <ion-text *ngIf="!spinner" slot="end" color="primary">{{creditoActual}}</ion-text>
+    <ion-spinner *ngIf="spinner" name="circles"></ion-spinner>
+  </ion-item>
+  <ion-button expand="full" color="secondary" size="large" (click)="limpiarCredito()">
+    <ion-icon name="trash-outline" color="light" slot="start"></ion-icon>
+    <ion-text color="light">Limpiar Crédito</ion-text>
+  </ion-button>
+  <ion-button expand="full" size="large" (click)="escanear()" style="height: 80%;">
+    <ion-icon slot="start" name="scan-circle-outline"></ion-icon>
+    <ion-text>Presione para escanear</ion-text>
+  </ion-button>
 </ion-content>
